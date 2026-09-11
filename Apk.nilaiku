@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Aplikasi Nilai Ku - XI TKJ 4</title>
+<style>
+*{box-sizing:border-box;font-family:'Segoe UI',sans-serif}
+body{margin:0;background:linear-gradient(135deg,#0ea5e9,#6366f1);min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
+.box{background:#fff;width:100%;max-width:950px;border-radius:15px;padding:25px;box-shadow:0 10px 30px rgba(0,0,0,0.2)}
+h2{text-align:center;color:#0ea5e9;margin-bottom:15px}
+input,select{width:100%;padding:12px;margin:8px 0;border:1px solid #ddd;border-radius:8px;font-size:14px}
+button{padding:12px;background:#0ea5e9;color:#fff;border:none;border-radius:8px;font-weight:bold;cursor:pointer;font-size:15px}
+button:hover{background:#0284c7}
+.btn-danger{background:#ef4444}
+.btn-danger:hover{background:#dc2626}
+.header{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.logout{background:#ef4444;padding:8px 15px;border-radius:8px;color:#fff;text-decoration:none;width:auto;font-size:14px}
+form.input{display:grid;grid-template-columns:2fr 1.5fr 1fr 120px;gap:10px;margin:20px 0}
+table{width:100%;border-collapse:collapse;margin-top:15px;font-size:13px}
+th,td{padding:10px;border:1px solid #ddd;text-align:center}
+th{background:#0ea5e9;color:#fff}
+.error{color:red;text-align:center}
+.aksi button{padding:5px 10px;font-size:12px;margin:2px}
+@media(max-width:750px){form.input{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="box" id="app"></div>
+
+<script>
+// DATA 36 SISWA XI TKJ 4
+const siswa = [
+"AMELIA ULFA","ANNISATUL AFIAH","ASNATUL ANJANI","CITRA AISYAH RANI","CITRA NILAM AL FAQI",
+"DEA ISNAENI","DESVITA AURILLIANTI","DZIHNI KHASNATU ANJANI","EKA MAULIDA AZ-ZAHRA","GAISA RIZKA AMANAH",
+"HA'FIZATUN NITSA","IQNASIAH ZAHROTUSSIFA","ISKI AINAYAH","Jhasmin Valenfia Tasya","LELI NUROH",
+"M. ALTOF SAIDAN","MAULANA RAFI","MEIKA AULIA HARVINNAISYA","MUHAMMAD ALAMZAH","Muhammad Cesario Izzan Azizi",
+"MUHAMMAD SYAHID FAA'IZ","NAYLA FAOZIANA","Nia Dwi Febriani","NUR ANDINI","NUR FATIKHA SARI",
+"NURIL MAULIDYA","NURUL HIDAYAH","PUJA SUKMA AYU","PUTRI OKTAFIANI","RATNA SARI DEWI",
+"RIA IDNI RAHMAWATI","SELI SILVI YANTI","SYIFA 'ALAWIYAH","Syifa Putri Rahmadani","WINDI DWI PRASASTI","ZAZKIYAH DZULHIJAH"
+];
+
+let login = localStorage.getItem('login');
+const app = document.getElementById('app');
+
+function getGrade(n){ 
+  n = parseInt(n);
+  if(n >= 90) return "A"; 
+  if(n >= 80) return "B"; 
+  if(n >= 70) return "C"; 
+  if(n >= 60) return "D"; 
+  return "E"; 
+}
+
+// HALAMAN LOGIN
+function showLogin(){
+  app.innerHTML = `
+    <h2>Login Aplikasi Nilai Ku XI TKJ 4</h2>
+    <form onsubmit="doLogin(event)">
+      <input type="text" id="user" placeholder="Username" required>
+      <input type="password" id="pass" placeholder="Password" required>
+      <button type="submit" style="width:100%">LOGIN</button>
+    </form>
+    <p class="error" id="err"></p>
+    <p style="text-align:center;font-size:12px">Default: admin / 1234</p>
+  `;
+}
+
+// HALAMAN UTAMA
+function showDashboard(){
+  let dataNilai = JSON.parse(localStorage.getItem('nilai')) || [];
+  let opsiSiswa = siswa.map((n,i) => `<option value="${i}">${n}</option>`).join('');
+  let tabel = dataNilai.map((d,i) => `
+    <tr>
+      <td>${i+1}</td>
+      <td style="text-align:left">${siswa[d.id]}</td>
+      <td>${d.mapel}</td>
+      <td><b>${d.nilai}</b></td>
+      <td><b>${getGrade(d.nilai)}</b></td>
+      <td class="aksi"><button class="btn-danger" onclick="hapusData(${i})">Hapus</button></td>
+    </tr>
+  `).join('');
+
+  app.innerHTML = `
+    <div class="header">
+      <h2>Input Nilai XI TKJ 4</h2>
+      <a href="#" class="logout" onclick="logout()">Logout</a>
+    </div>
+    <p>Halo, <b>${login}</b></p>
+
+    <form class="input" onsubmit="simpanNilai(event)">
+      <select id="id_siswa" required><option value="">-- Pilih Nama Siswa --</option>${opsiSiswa}</select>
+      <input type="text" id="mapel" placeholder="Nama Mapel" required>
+      <input type="number" id="nilai" placeholder="Nilai" min="0" max="100" required>
+      <button type="submit">Simpan</button>
+    </form>
+
+    <button onclick="exportExcel()" style="width:100%;margin-bottom:10px">Export ke Excel CSV</button>
+
+    <h3>Daftar Nilai</h3>
+    <div style="overflow-x:auto">
+    <table>
+      <tr><th>No</th><th>Nama Siswa</th><th>Mata Pelajaran</th><th>Nilai</th><th>Grade</th><th>Aksi</th></tr>
+      ${tabel || "<tr><td colspan='6'>Belum ada data nilai</td></tr>"}
+    </table>
+    </div>
+  `;
+}
+
+// FUNGSI LOGIN
+function doLogin(e){
+  e.preventDefault();
+  let u = document.getElementById('user').value;
+  let p = document.getElementById('pass').value;
+  if(u == 'admin' && p == '1234'){
+    localStorage.setItem('login', u);
+    location.reload();
+  }else{
+    document.getElementById('err').innerText = 'Login Gagal! Username/Password salah';
+  }
+}
+
+// FUNGSI SIMPAN
+function simpanNilai(e){
+  e.preventDefault();
+  let dataNilai = JSON.parse(localStorage.getItem('nilai')) || [];
+  dataNilai.push({
+    id: document.getElementById('id_siswa').value,
+    mapel: document.getElementById('mapel').value,
+    nilai: document.getElementById('nilai').value
+  });
+  localStorage.setItem('nilai', JSON.stringify(dataNilai));
+  alert('Data berhasil disimpan!');
+  location.reload();
+}
+
+// FUNGSI HAPUS
+function hapusData(i){
+  if(confirm('Yakin mau hapus data ini?')){
+    let dataNilai = JSON.parse(localStorage.getItem('nilai')) || [];
+    dataNilai.splice(i,1);
+    localStorage.setItem('nilai', JSON.stringify(dataNilai));
+    location.reload();
+  }
+}
+
+// FUNGSI EXPORT
+function exportExcel(){
+  let dataNilai = JSON.parse(localStorage.getItem('nilai')) || [];
+  let csv = 'No,Nama Siswa,Mata Pelajaran,Nilai,Grade\n';
+  dataNilai.forEach((d,i)=>{
+    csv += `${i+1},${siswa[d.id]},${d.mapel},${d.nilai},${getGrade(d.nilai)}\n`;
+  });
+  let blob = new Blob([csv], {type: 'text/csv'});
+  let url = window.URL.createObjectURL(blob);
+  let a = document.createElement('a');
+  a.setAttribute('href', url);
+  a.setAttribute('download', 'nilai_tkj4.csv');
+  a.click();
+}
+
+function logout(){
+  localStorage.removeItem('login');
+  location.reload();
+}
+
+// JALANIN
+if(login){ showDashboard(); } else { showLogin(); }
+</script>
+</body>
+</html>
